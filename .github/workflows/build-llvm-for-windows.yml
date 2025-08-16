@@ -1,9 +1,7 @@
-name: Build LLVM for Windows
+name: Build LLVM for Windows and Publish Release
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
     branches: [ main ]
   workflow_dispatch:
 
@@ -30,8 +28,23 @@ jobs:
         cd build
         ninja
 
-    - name: Archive Build Artifacts
-      uses: actions/upload-artifact@v4
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        name: llvm-windows-build
-        path: build/
+        tag_name: llvm-windows-${{ github.run_number }}
+        release_name: LLVM Windows Build ${{ github.run_number }}
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: build/
+        asset_name: llvm-windows-build.zip
+        asset_content_type: application/zip
